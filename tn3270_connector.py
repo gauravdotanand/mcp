@@ -243,6 +243,24 @@ class TN3270Connector:
         screen = self.get_screen_content()
         return "READY" in screen.upper()
         
+    def _check_connection(self) -> bool:
+        """
+        Check if the connection is still active
+        
+        Returns:
+            bool: True if connection is active
+        """
+        if not self.emulator or not self.connected:
+            return False
+            
+        try:
+            # Try to get screen content to check connection
+            self.emulator.string_get(1, 1, 1, 1)
+            return True
+        except Exception:
+            self.connected = False
+            return False
+
     def send_command(self, command: str, wait_time: Optional[int] = None) -> str:
         """
         Send a command to the mainframe and get the response
@@ -254,7 +272,7 @@ class TN3270Connector:
         Returns:
             str: Response from the mainframe
         """
-        if not self.connected:
+        if not self._check_connection():
             raise ConnectionError("Not connected to mainframe")
             
         wait_time = wait_time or self.config.screen_wait_time
@@ -291,6 +309,7 @@ class TN3270Connector:
             
         except Exception as e:
             logger.error(f"Failed to send command: {str(e)}")
+            self.connected = False  # Mark as disconnected on error
             raise CommandError(f"Command failed: {str(e)}")
             
     def _is_command_complete(self, screen: str) -> bool:
@@ -300,10 +319,14 @@ class TN3270Connector:
         
     def get_screen_content(self) -> str:
         """Get the current screen content"""
+        if not self._check_connection():
+            raise ConnectionError("Not connected to mainframe")
+            
         try:
             return self.emulator.string_get(1, 1, 24, 80)
         except Exception as e:
             logger.error(f"Failed to get screen content: {str(e)}")
+            self.connected = False  # Mark as disconnected on error
             raise
             
     def get_session_stats(self) -> Dict[str, Any]:
@@ -323,19 +346,29 @@ class TN3270Connector:
         """Disconnect from the mainframe"""
         try:
             if self.emulator:
-                # Log final screen
+                # Log final screen if still connected
                 if self.connected:
-                    self._log_screen(self.get_screen_content(), "disconnect")
+                    try:
+                        self._log_screen(self.get_screen_content(), "disconnect")
+                    except Exception:
+                        pass  # Ignore errors during final screen capture
                     
-                # Log session stats
-                stats = self.get_session_stats()
-                logger.info(f"Session statistics: {stats}")
+                    # Log session stats
+                    stats = self.get_session_stats()
+                    logger.info(f"Session statistics: {stats}")
                 
-                self.emulator.terminate()
-                self.connected = False
-                logger.info("Successfully disconnected from mainframe")
+                try:
+                    self.emulator.terminate()
+                except Exception as e:
+                    logger.error(f"Error during emulator termination: {str(e)}")
+                finally:
+                    self.emulator = None
+                    self.connected = False
+                    logger.info("Successfully disconnected from mainframe")
         except Exception as e:
             logger.error(f"Failed to disconnect: {str(e)}")
+            self.connected = False
+            self.emulator = None
             raise
 
 # Example usage
