@@ -47,7 +47,6 @@ class TN3270Config:
     password: str
     timeout: int = 30
     visible: bool = False
-    model: str = "3279-2"
     lu_name: Optional[str] = None
     ssl: bool = False
     retry_attempts: int = 3
@@ -151,11 +150,10 @@ class TN3270Connector:
         
         for attempt in range(self.config.retry_attempts):
             try:
-                # Initialize the emulator
+                # Initialize the emulator with only supported parameters
                 self.emulator = Emulator(
                     visible=self.config.visible,
-                    timeout=self.config.timeout,
-                    model=self.config.model
+                    timeout=self.config.timeout
                 )
                 
                 # Build connection string
