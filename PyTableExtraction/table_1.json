@@ -1,0 +1,28 @@
+{
+  "header": [
+    "Name",
+    "Age",
+    "City",
+    "Salary"
+  ],
+  "rows": [
+    [
+      "John Doe",
+      "30",
+      "New York",
+      "S50,000"
+    ],
+    [
+      "Jane Smith",
+      "25",
+      "Los Angeles",
+      "545,000"
+    ],
+    [
+      "Bob Johnson",
+      "35",
+      "Chicago",
+      "S60,000"
+    ]
+  ]
+}
