@@ -3,4 +3,9 @@ uvicorn
 openai
 pydantic
 sqlalchemy
-alembic 
+alembic
+sentence-transformers
+numpy
+email-validator
+streamlit
+requests 
